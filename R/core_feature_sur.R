@@ -37,60 +37,53 @@ core_feature_sur <- function(gene, # gene name
                              median.line = NULL, # drawing a horizontal/vertical line at median survival. c("none", "hv", "h", "v")
                              color = NULL, # two color value for high and low group
                              xlab = NULL, # x axis title
+                             xlab_length = NULL, # length of x axis title
                              pval.coord = NULL # p value position
 ) {
   library(survival)
   library(survminer)
 
-  if (is.null(color) == T) {
+  if (is.null(color)) {
     color <- c("#868686", "#B24745") ## default color value
-  } else {
-    color <- color
   }
 
-  if (is.null(median.line) == T) {
+  if (is.null(median.line)) {
     median.line <- "none" ## default not show
-  } else {
-    median.line <- median.line
   }
 
-  if (is.null(xlab) == T) {
+  if (is.null(xlab)) {
     xlab <- "Time"
-  } else {
-    xlab <- xlab
   }
 
-  if (is.null(pval.coord) == T) {
+  if (!is.null(xlab_length)) {
+    xlab <- strtrim(xlab, xlab_length)  # Truncate xlab to the specified length
+  }
+
+  if (is.null(pval.coord)) {
     pval.coord <- c(1, 0.25)
-  } else {
-    pval.coord <- pval.coord
   }
-
 
   tmp <- InputMatrix[, c("OS.time", "OS", gene)]
   colnames(tmp)[3] <- "gene"
   tmp <- tmp[!is.na(tmp$gene), ]
   mySurv <- Surv(tmp$OS.time, tmp$OS)
 
-  if (is.null(cutoff) == T) {
+  if (is.null(cutoff)) {
     cutoff <- 0.5
     value <- quantile(tmp$gene, probs = c(cutoff))
   } else {
     if (cutoff == "mean") {
       value <- mean(tmp$gene)
     } else {
-      cutoff <- cutoff
       value <- quantile(tmp$gene, probs = c(cutoff))
     }
   }
 
   tmp$Group <- ifelse(tmp$gene > value, "High", "Low")
-  Group <- tmp$Group
-  Group <- factor(Group, levels = c("Low", "High"))
-  tmp$Group <- factor(Group, levels = c("Low", "High"))
+  Group <- factor(tmp$Group, levels = c("Low", "High"))
   fit <- survfit(Surv(OS.time, OS) ~ Group, data = tmp)
 
-  # calculate HR and 95%CI
+  # Calculate HR and 95%CI
   data.survdiff <- survdiff(mySurv ~ Group)
   p.val <- 1 - pchisq(data.survdiff$chisq, length(data.survdiff$n) - 1)
   HR <- (data.survdiff$obs[2] / data.survdiff$exp[2]) / (data.survdiff$obs[1] / data.survdiff$exp[1])
@@ -117,7 +110,7 @@ core_feature_sur <- function(gene, # gene name
                      ),
                      HR, CI, sep = "\n"
                    ),
-                   xlab = xlab,
+                   xlab = xlab,  # Use the truncated xlab
                    title = gene,
                    pval.coord = pval.coord
   )
